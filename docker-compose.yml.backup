@@ -1,0 +1,93 @@
+version: '3.8'
+
+services:
+  macos-au-tester:
+    image: sickcodes/docker-osx:latest
+    container_name: macos-au-tester
+    privileged: true
+    ports:
+      - "5999:5999"   # VNC (display :99)
+      - "50922:10022" # SSH
+    environment:
+      - RAM=16
+      - SMP=4
+      - CORES=4
+      - GENERATE_UNIQUE=true
+      - DEVICE_MODEL=iMacPro1,1
+      - SHORTNAME=monterey
+      # VirtioFS enablement via QEMU -virtfs flags
+      - EXTRA=-display none -vnc 0.0.0.0:99 -virtfs local,path=/host-source,mount_tag=host-source,security_model=mapped-xattr -virtfs local,path=/host-build,mount_tag=host-build,security_model=mapped-xattr
+    cap_add:
+      - SYS_ADMIN  # Required for VirtioFS
+    devices:
+      - /dev/kvm   # KVM acceleration
+      - /dev/fuse  # FUSE for VirtioFS
+    volumes:
+      # === Named Volumes (Persistent Data) ===
+      # macOS disk image - MUST always persist
+      - macos-disk:/home/arch/OSX-KVM
+
+      # Xcode Command Line Tools cache - 5GB download, persists until image commit
+      - xcode-cache:/home/arch/xcode-cache:rw
+
+      # CMake/JUCE build cache - speeds incremental builds
+      - build-cache:/home/arch/build-cache:rw
+
+      # SSH keys - persists for seamless auth (until image commit)
+      - ssh-keys:/home/arch/.ssh:rw
+
+      # Homebrew cache - speeds package installs (until image commit)
+      - homebrew-cache:/home/arch/Library/Caches/Homebrew:rw
+
+      # === Bind Mounts (VirtioFS for Performance) ===
+      # Source code (read-only) - prevents accidental modification in macOS
+      - /mnt/c/dev/HeathAudio:/host-source:ro,consistent
+
+      # Build outputs (read-write) - for Windows/macOS cross-platform builds
+      - /mnt/c/dev/HeathAudio/build:/host-build:rw,consistent
+
+    # tmpfs for speed (no persistence needed)
+    tmpfs:
+      - /tmp:noexec,size=2g
+      - /var/tmp:noexec,size=1g
+
+    networks:
+      - macos-net
+
+volumes:
+  # Existing (keep data)
+  macos-disk:
+    driver: local
+
+  # New persistent volumes
+  xcode-cache:
+    driver: local
+    driver_opts:
+      type: none
+      o: bind
+      device: ./data/xcode-cache
+
+  build-cache:
+    driver: local
+    driver_opts:
+      type: none
+      o: bind
+      device: ./data/build-cache
+
+  ssh-keys:
+    driver: local
+    driver_opts:
+      type: none
+      o: bind
+      device: ./data/ssh-keys
+
+  homebrew-cache:
+    driver: local
+    driver_opts:
+      type: none
+      o: bind
+      device: ./data/homebrew-cache
+
+networks:
+  macos-net:
+    driver: bridge
