@@ -12,7 +12,7 @@ services:
       - RAM=16
       - SMP=4
       - CORES=4
-      - GENERATE_UNIQUE=true
+      - NOPICKER=true
       - DEVICE_MODEL=iMacPro1,1
       - SHORTNAME=monterey
       # VirtioFS enablement via QEMU -virtfs flags
@@ -49,7 +49,7 @@ services:
     # tmpfs for speed (no persistence needed)
     tmpfs:
       - /tmp:noexec,size=2g
-      - /var/tmp:noexec,size=1g
+      - /var/tmp:noexec,size=4g
 
     networks:
       - macos-net
