@@ -16,6 +16,7 @@ services:
       - DEVICE_MODEL=iMacPro1,1
       - SHORTNAME=monterey
       # VirtioFS enablement via QEMU -virtfs flags
+      # USB audio passthrough via WSL2 usbipd-win not supported - device nodes not created
       - EXTRA=-display none -vnc 0.0.0.0:99 -virtfs local,path=/host-source,mount_tag=host-source,security_model=mapped-xattr -virtfs local,path=/host-build,mount_tag=host-build,security_model=mapped-xattr
     cap_add:
       - SYS_ADMIN  # Required for VirtioFS
